@@ -4,7 +4,8 @@ defmodule Models.User do
     :username,
     :email,
     :password,
-    :login_atempts
+    :login_atempts,
+    :last_login_atempt
   ]
 
   def create(username, email, password) do
@@ -38,5 +39,5 @@ defmodule Models.User do
 
   defp do_find([]), do: nil
 
-  defp do_find(user), do: user
+  defp do_find([user]), do: user
 end
