@@ -1,7 +1,8 @@
-defmodule UserAccount do
+defmodule UserAccounts do
   use GenServer
-  alias Models.User, as: User
   alias Constants.ErrorMessage, as: ErrorMessage
+  alias MessageApp
+  alias Models.User, as: User
 
   def get_all(), do: GenServer.call(__MODULE__, :all)
 
@@ -22,11 +23,12 @@ defmodule UserAccount do
 
       user ->
         "Welcome, #{user.username}!"
+        user
     end
   end
 
   def register(username, email, password) do
-    response = GenServer.cast(__MODULE__, {:register, username, email, password})
+    response = GenServer.call(__MODULE__, {:register, username, email, password})
 
     case response do
       :email_taken ->
@@ -34,6 +36,7 @@ defmodule UserAccount do
 
       user ->
         "Welcome, #{user.username}!"
+        user
     end
   end
 
@@ -63,7 +66,7 @@ defmodule UserAccount do
     end
   end
 
-  def handle_call({:register, username, email, password}, user_accounts) do
+  def handle_call({:register, username, email, password}, _from, user_accounts) do
     user = User.find_by_email(user_accounts, email)
 
     if user === nil do
@@ -71,6 +74,36 @@ defmodule UserAccount do
       {:reply, new_user, [new_user | user_accounts]}
     else
       {:reply, :email_taken, user_accounts}
+    end
+  end
+
+  def handle_call({:fl_all, user_id}, _from, user_accounts) do
+    user = User.find_by_id(user_accounts, user_id)
+    {:reply, user.friend_list, user_accounts}
+  end
+
+  def handle_call({:fr_all, user_id}, _from, user_accounts) do
+    user = User.find_by_id(user_accounts, user_id)
+    {:reply, user.friend_requests, user_accounts}
+  end
+
+  def handle_call({:fr_send, from_user_id, to_user_id}, _from, user_accounts) do
+    from_user = User.find_by_id(user_accounts, from_user_id)
+    to_user = User.find_by_id(user_accounts, to_user_id)
+
+    cond do
+      from_user.id === to_user_id ->
+        {:reply, :fr_to_self, user_accounts}
+
+      to_user === nil ->
+        {:reply, :user_id_not_foud, user_accounts}
+
+      User.contains_friend_request?(to_user, from_user) ->
+        {:reply, :fr_exists, user_accounts}
+
+      true ->
+        updated_user = %{to_user | friend_requests: [from_user | to_user.friend_requests]}
+        {:reply, :success, User.update(user_accounts, updated_user)}
     end
   end
 end

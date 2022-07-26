@@ -5,7 +5,9 @@ defmodule Models.User do
     :email,
     :password,
     :login_atempts,
-    :last_login_atempt
+    :last_login_atempt,
+    :friend_list,
+    :friend_requests
   ]
 
   def create(username, email, password) do
@@ -17,12 +19,24 @@ defmodule Models.User do
       username: username,
       email: email,
       password: password,
-      login_atempts: 0
+      login_atempts: 0,
+      friend_list: [],
+      friend_requests: []
     }
+  end
+
+  def contains_friend_request?(user, fr_user) do
+    fr_exist = Enum.filter(user.friend_requests, fn fr -> fr === fr_user end)
+    do_contains(fr_exist)
   end
 
   def find_by_email(users, email) do
     user = Enum.filter(users, fn user -> user.email === email end)
+    do_find(user)
+  end
+
+  def find_by_id(users, id) do
+    user = Enum.filter(users, fn user -> user.id === id end)
     do_find(user)
   end
 
@@ -36,6 +50,10 @@ defmodule Models.User do
       if user.id === updated_user.id, do: updated_user, else: user
     end)
   end
+
+  defp do_contains([]), do: false
+
+  defp do_contains(_exists), do: true
 
   defp do_find([]), do: nil
 

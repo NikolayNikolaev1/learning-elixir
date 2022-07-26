@@ -1,7 +1,7 @@
 defmodule UsersCache do
   use GenServer
   alias Models.User, as: User
-  @url "https://api.github.com/users/"
+  @url "https://api.github.com/"
 
   def start_link(),
     do: GenServer.start_link(__MODULE__, [], name: __MODULE__)
@@ -14,14 +14,23 @@ defmodule UsersCache do
     do_fetch_user(curr_user, username, cached_time)
   end
 
+  def fetch_repository(username, repo) do
+    GenServer.cast(__MODULE__, {:fetch_repositories, username, repo})
+  end
+
   def get_all_users(), do: GenServer.call(__MODULE__, :get_all_users)
 
   def handle_call(:get_all_users, _from, users),
     do: {:reply, users, users}
 
-  def handle_cast({:get_user, username}, users_cache) do
+  def handle_cast({:fetch_user, username}, users_cache) do
     user = get_user(username)
     {:noreply, [user | users_cache]}
+  end
+
+  def handle_cast({:fetch_repositories, owner, repo}, _state) do
+    {:ok, response} = HTTPoison.get(@url <> "repos/#{owner}/#{repo}")
+    IO.puts(response)
   end
 
   def handle_cast({:update_user, username}, users_cache) do
@@ -39,7 +48,7 @@ defmodule UsersCache do
   end
 
   defp do_fetch_user(nil, username, _cached_time) do
-    GenServer.cast(__MODULE__, {:get_user, username})
+    GenServer.cast(__MODULE__, {:fetch_user, username})
   end
 
   defp do_fetch_user(user, username, cached_time) do
@@ -48,7 +57,7 @@ defmodule UsersCache do
   end
 
   defp get_user(username) do
-    {:ok, response} = HTTPoison.get(@url <> username)
+    {:ok, response} = HTTPoison.get(@url <> "users/#{username}")
     {:ok, user} = Jason.decode(response.body)
 
     %User{
