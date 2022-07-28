@@ -106,4 +106,31 @@ defmodule UserAccounts do
         {:reply, :success, User.update(user_accounts, updated_user)}
     end
   end
+
+  def handle_cast({:fr_accept, user_id, request_user_id}, user_accounts) do
+    user = User.find_by_id(user_accounts, user_id)
+    new_friend = User.find_by_id(user_accounts, request_user_id)
+
+    handled_friend_requests =
+      Enum.filter(user.friend_requests, fn fr -> fr.id !== request_user_id end)
+
+    updated_user = %{
+      user
+      | friend_requests: handled_friend_requests,
+        friend_list: [new_friend | user.friend_list]
+    }
+
+    {:noreply, User.update(user_accounts, updated_user)}
+  end
+
+  def handle_cast({:fr_decline, user_id, request_user_id}, user_accounts) do
+    user = User.find_by_id(user_accounts, user_id)
+
+    handled_friend_requests =
+      Enum.filter(user.friend_requests, fn fr -> fr.id !== request_user_id end)
+
+    updated_user = %{user | friend_requests: handled_friend_requests}
+
+    {:noreply, User.update(user_accounts, updated_user)}
+  end
 end

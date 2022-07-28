@@ -31,6 +31,14 @@ defmodule MessageApp do
     end
   end
 
-  def start_link(user),
-    do: GenServer.start_link(__MODULE__, {user.id, user.username, user.email, [], []})
+  def handle_friend_request(user_id, request_user_id, true) do
+    GenServer.cast(UserAccounts, {:fr_accept, user_id, request_user_id})
+
+    {:ok, pid} = GenServer.start_link(__MODULE__, {user_id, request_user_id, []})
+    pid
+  end
+
+  def handle_friend_request(user_id, request_user_id, false) do
+    GenServer.cast(UserAccounts, {:fr_decline, user_id, request_user_id})
+  end
 end
