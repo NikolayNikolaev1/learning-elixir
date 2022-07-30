@@ -10,6 +10,15 @@ defmodule Models.User do
     :friend_requests
   ]
 
+  def contains_friend_request?(user, fr_user_id) do
+    fr_exist =
+      Enum.filter(user.friend_requests, fn fr_connection ->
+        fr_connection.user_id === fr_user_id
+      end)
+
+    do_contains(fr_exist)
+  end
+
   def create(username, email, password) do
     id_num = Enum.random(1000..9999)
     id = "##{username}###{id_num}"
@@ -25,30 +34,52 @@ defmodule Models.User do
     }
   end
 
-  def contains_friend_request?(user, fr_user) do
-    fr_exist = Enum.filter(user.friend_requests, fn fr -> fr === fr_user end)
-    do_contains(fr_exist)
-  end
-
   def find_by_email(users, email) do
-    user = Enum.filter(users, fn user -> user.email === email end)
+    user =
+      Enum.filter(users, fn user ->
+        user.email === email
+      end)
+
     do_find(user)
   end
 
   def find_by_id(users, id) do
-    user = Enum.filter(users, fn user -> user.id === id end)
+    user =
+      Enum.filter(users, fn user ->
+        user.id === id
+      end)
+
     do_find(user)
   end
 
   def find_by_username(users, username) do
-    user = Enum.filter(users, fn user -> user.username === username end)
+    user =
+      Enum.filter(users, fn user ->
+        user.username === username
+      end)
+
     do_find(user)
   end
 
-  def update(users, updated_user) do
-    Enum.map(users, fn user ->
-      if user.id === updated_user.id, do: updated_user, else: user
+  def remove_from_fr_list(fr_list, user_id) do
+    Enum.filter(fr_list, fn fr_connection ->
+      fr_connection.user_id !== user_id
     end)
+  end
+
+  def update(users, [user_for_update]) do
+    Enum.map(users, fn user ->
+      if user.id === user_for_update.id, do: user_for_update, else: user
+    end)
+  end
+
+  def update(users, [current | users_for_update]) do
+    updated_users =
+      Enum.map(users, fn user ->
+        if user.id === current.id, do: current, else: user
+      end)
+
+    update(updated_users, users_for_update)
   end
 
   defp do_contains([]), do: false
