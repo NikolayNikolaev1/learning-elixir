@@ -61,6 +61,16 @@ defmodule Models.User do
     do_find(user)
   end
 
+  def has_friend?(user, friend_id) do
+    friend_exist =
+      Enum.filter(user.friend_list, fn fr_connection ->
+        fr_connection.user_id === friend_id
+      end)
+
+    do_contains(friend_exist)
+  end
+
+  # Remove a user_id from the given friends/friend_requests list.
   def remove_from_fr_list(fr_list, user_id) do
     Enum.filter(fr_list, fn fr_connection ->
       fr_connection.user_id !== user_id
