@@ -23,5 +23,7 @@ defmodule Constants.SuccessMessage do
     "Successfully sent message to friend with ID: #{to_user_id}!"
   end
 
+  def unread_messages_count(msg_count), do: "Total unread messages: #{msg_count}."
+
   def welcome(username), do: "Welcome, #{username}!"
 end

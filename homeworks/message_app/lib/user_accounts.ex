@@ -130,6 +130,23 @@ defmodule UserAccounts do
     end
   end
 
+  # Return list of all mc_pids for given user_id.
+  def handle_call({:get_all_mc_pids, user_id}, _from, user_accounts) do
+    user = User.find_by_id(user_accounts, user_id)
+
+    cond do
+      user === nil ->
+        {:reply, {:user_not_found, user_id}, user_accounts}
+
+      user.friend_list === [] ->
+        {:reply, :no_friends, user_accounts}
+
+      true ->
+        mc_pid_list = Enum.map(user.friend_list, fn fr_connection -> fr_connection.mc_pid end)
+        {:reply, {:success, mc_pid_list}, user_accounts}
+    end
+  end
+
   # Return the MessageClient pid for given user ids.
   def handle_call({:get_mc_pid, user_id, friend_id}, _from, user_accounts) do
     user = User.find_by_id(user_accounts, user_id)

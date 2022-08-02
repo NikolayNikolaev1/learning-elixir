@@ -46,6 +46,25 @@ defmodule MessageClient do
     end
   end
 
+  def handle_call({:get_unread, user_id}, _from, messages) do
+    unread_msg_list =
+      Enum.filter(messages, fn msg ->
+        msg.status === :send and msg.to_user_id === user_id
+      end)
+
+    {:reply, unread_msg_list, messages}
+  end
+
+  # Return list of total unread msg count for each mc_pid for given user.
+  def handle_call({:get_unread_msg_count, user_id}, _from, messages) do
+    unread_msg_list =
+      Enum.filter(messages, fn msg ->
+        msg.status === :send and msg.to_user_id === user_id
+      end)
+
+    {:reply, Enum.count(unread_msg_list), messages}
+  end
+
   # Set all message status to read.
   def handle_cast({:read, from_user_id}, messages) do
     updated_messages = Message.read(messages, from_user_id)

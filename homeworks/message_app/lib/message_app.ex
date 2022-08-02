@@ -82,6 +82,9 @@ defmodule MessageApp do
 
       {:user_not_found, id} ->
         ErrorMessage.user_id_not_found(id)
+
+      any ->
+        ErrorMessage.any(any)
     end
   end
 
@@ -90,7 +93,7 @@ defmodule MessageApp do
 
     case response do
       [] ->
-        "You do not havve any friends at the moment."
+        "You do not have any friends at the moment."
 
       list ->
         list
@@ -109,6 +112,76 @@ defmodule MessageApp do
     end
   end
 
+  def get_unread_messages(user_id) do
+    response = GenServer.call(UserAccounts, {:get_all_mc_pids, user_id})
+
+    case response do
+      :no_friends ->
+        ErrorMessage.friends_not_found()
+
+      {:success, mc_pid_list} ->
+        unread_messages =
+          Enum.map(mc_pid_list, fn mc_pid ->
+            msg = GenServer.call(mc_pid, {:get_unread, user_id})
+            GenServer.cast(mc_pid, {:read, user_id})
+            msg
+          end)
+
+        unread_messages
+
+      {:user_not_found, id} ->
+        ErrorMessage.user_id_not_found(id)
+
+      any ->
+        ErrorMessage.any(any)
+    end
+  end
+
+  def get_unread_messages(user_id, friend_id) do
+    response = GenServer.call(UserAccounts, {:get_mc_pid, user_id, friend_id})
+
+    case response do
+      :friend_not_found ->
+        ErrorMessage.friend_not_found(friend_id)
+
+      {:success, mc_pid} ->
+        unread_messages = GenServer.call(mc_pid, {:get_unread, user_id})
+        GenServer.cast(mc_pid, {:read, user_id})
+        unread_messages
+
+      {:user_not_found, id} ->
+        ErrorMessage.user_id_not_found(id)
+
+      any ->
+        ErrorMessage.any(any)
+    end
+  end
+
+  # List total amount of unread messages.
+  def get_unread_messages_count(user_id) do
+    response = GenServer.call(UserAccounts, {:get_all_mc_pids, user_id})
+
+    case response do
+      :no_friends ->
+        ErrorMessage.friends_not_found()
+
+      {:success, mc_pid_list} ->
+        unread_messages =
+          Enum.map(mc_pid_list, fn mc_pid ->
+            GenServer.call(mc_pid, {:get_unread_msg_count, user_id})
+          end)
+
+        unread_msg_count = Enum.sum(unread_messages)
+        SuccessMessage.unread_messages_count(unread_msg_count)
+
+      {:user_not_found, id} ->
+        ErrorMessage.user_id_not_found(id)
+
+      any ->
+        ErrorMessage.any(any)
+    end
+  end
+
   # Accept friend request.
   def handle_friend_request(user_id, request_user_id, true) do
     {:ok, mc_pid} = GenServer.start_link(MessageClient, [])
@@ -124,6 +197,9 @@ defmodule MessageApp do
 
       {:user_not_found, id} ->
         ErrorMessage.user_id_not_found(id)
+
+      any ->
+        ErrorMessage.any(any)
     end
   end
 
@@ -140,11 +216,14 @@ defmodule MessageApp do
 
       {:user_not_found, id} ->
         ErrorMessage.user_id_not_found(id)
+
+      any ->
+        ErrorMessage.any(any)
     end
   end
 
   def login(email, password) do
-    response = GenServer.call(__MODULE__, {:login, email, password})
+    response = GenServer.call(UserAccounts, {:login, email, password})
 
     case response do
       {:success, user} ->
@@ -236,6 +315,9 @@ defmodule MessageApp do
 
       {:user_not_found, id} ->
         ErrorMessage.user_id_not_found(id)
+
+      any ->
+        ErrorMessage.any(any)
     end
   end
 

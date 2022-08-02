@@ -5,6 +5,8 @@ defmodule Constants.ErrorMessage do
 
   def email_taken(email), do: "User with email #{email} already exists."
 
+  def friends_not_found(), do: "You do not have any friends at the moment."
+
   def friend_not_found(id) do
     "User with ID: #{id} does not exist in your friend list."
   end
